@@ -1,10 +1,7 @@
-[theme]
-primaryColor = "#17687C"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F3F7F9"
-textColor = "#183A50"
-font = "sans serif"
 [server]
-maxUploadSize = 10
-enableXsrfProtection = true
-enableCORS = true
+maxUploadSize = 12
+maxMessageSize = 12
+
+[theme]
+base = "light"
+primaryColor = "#146EC0"

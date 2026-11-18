@@ -1,39 +1,60 @@
-# Booking Data Analyst Lab — QR Demo
+# Export Documentation Intelligence — Original App / Public Presentation
 
-**Đề tài:** Ứng dụng Python trong xây dựng quy trình xử lý và phân tích dữ liệu booking xuất khẩu tại Công ty TNHH Đại Quốc Việt.
+This repository is the **original Streamlit app supplied by the project author**, prepared for a public presentation on Streamlit Community Cloud. It is **not** the separate QR-demo app. The operational pages remain: Dashboard, New Booking, Process Overview, Documents, Deadlines, Bookings, Tracking, B/L, Settings. A **Data Analysis** page was added to demonstrate the mathematical and statistical methods in the internship report.
 
-Web app tương tác theo quy trình **Data Analyst**: khám phá dữ liệu → kiểm tra chất lượng → làm sạch → thống kê → trực quan hóa → giải thích insight. Xây dựng bằng Python, pandas, NumPy, Plotly, Streamlit và SQLite.
+## Important: public showcase, not the production system
 
-> **Chỉ sử dụng dữ liệu GIẢ LẬP.** Bộ demo không chứa dữ liệu booking hay thông tin khách hàng thực tế của công ty. Không đưa dữ liệu nội bộ lên ứng dụng công khai khi chưa được phép.
+- **Synthetic sample data only.** Use **Load synthetic booking sample** in the left sidebar, then open **Data Analysis**.
+- Storage is a temporary per-Streamlit-session folder. It is **not permanent**, and the server can reset it at any time. Cross-session application storage is not used in this public build.
+- Do not upload real packing lists, booking confirmations, customer information, DG documentation or company database files into a public demo.
+- External Gemini AI calls are **disabled in this public build**. Offline extraction, rule-based parsing, manual review and analytics remain accessible. Some original AI-assisted extraction features may fall back to rules and manual review.
+- Not a secure multi-user production document-management deployment. Use authenticated access, separate storage and a durable managed database before hosting any real data.
 
-## Chạy trên máy
+## Cloud deploy
+
+1. Publish all files in this folder to a GitHub repository. On macOS, with `gh` already authenticated:
+
+   ```bash
+   cd ~/Downloads/booking_goc_streamlit_cloud
+   bash publish_to_github_mac.sh booking-data-analyst-demo
+   ```
+
+2. Go to [Streamlit Community Cloud](https://share.streamlit.io/), create an app using GitHub:
+
+   | Setting | Value |
+   |---|---|
+   | Repository | `YOUR_GITHUB_USER/booking-data-analyst-demo` |
+   | Branch | `main` |
+   | Main file path | `app.py` |
+
+3. Deploy and verify the URL in a mobile browser using 4G/5G.
+4. Convert **the actual deployed URL** to a QR code. The URL is not known before deployment.
+
+Do not commit `.env`, `.streamlit/secrets.toml`, Excel sheets, SQLite databases, uploaded documents or any company file.
+
+## Run locally as the public demo copy
 
 ```bash
+cd ~/Downloads/booking_goc_streamlit_cloud
 python3 -m venv .venv
-source .venv/bin/activate  # macOS / Linux
+source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m streamlit run streamlit_app.py
+python -m streamlit run app.py --server.port 8503
 ```
 
-## Triển khai công khai trên Streamlit Community Cloud
+This will **not replace** your original local project. This package makes a copy of it for public presentation. To return to the full operational local app, use your original private source — not this demo distribution.
 
-1. Đưa **các file này lên thư mục gốc** của một GitHub repository (ví dụ `booking-data-analyst-demo`).
-2. Truy cập https://share.streamlit.io/ → Create app → chọn GitHub repository.
-3. Chọn branch `main` và main file path **`streamlit_app.py`** → Deploy.
-4. Sao chép địa chỉ công khai `https://...streamlit.app` và thử mở bằng điện thoại qua **4G/5G**.
-5. Tạo mã QR ngay trong tab **Chia sẻ bằng QR** của app, hoặc:
+## Data Analysis page
 
-```bash
-python make_qr.py --url https://TEN-APP-THAT.streamlit.app --out qr_bao_cao.png
-```
+`cloud_demo.py` illustrates:
 
-Địa chỉ trên chỉ là ví dụ, phải thay bằng URL thực tế. QR dùng Internet công khai **không phụ thuộc vào cùng Wi-Fi**.
+- Profiling: missing carriers, invalid ETD and unavailable lead-time pairs.
+- One shipment = one distinct Booking ID; containers aggregated beforehand.
+- Monthly shipment totals, MoM change, 3-month rolling average.
+- Carrier share and HHI, POL→POD route composition.
+- Lead time (`ETD - Booking Date`) and mean, median, standard deviation, Q1/Q3, IQR and P90.
+- Explicit interpretation and limitations. All built-in values are **fabricated** and do not imply performance of the named business.
 
-## Kiểm thử
+## Limitations checked
 
-```bash
-python -m unittest discover -s tests -v
-python -m py_compile streamlit_app.py analysis_core.py sample_data.py sqlite_export.py make_qr.py
-```
-
-Xem [README_VI.md](README_VI.md) để hiểu dữ liệu, từng chỉ số thống kê, quy trình và giới hạn phương pháp. Xem [GITHUB_DEPLOY.md](GITHUB_DEPLOY.md) để tải code lên GitHub bằng giao diện hoặc terminal.
+The source syntax, synthetic workbook, calculation functions and SQLite synchronization have been tested in the creation environment. Running Streamlit itself was **not** possible there because Streamlit was not installed and outgoing package installation was blocked. Cloud deployment can reveal environment-specific errors; view the Streamlit deployment log if that happens.

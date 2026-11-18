@@ -1,32 +1,67 @@
 #!/usr/bin/env bash
+# Upload the reviewed public-demo copy of the ORIGINAL app to the user's GitHub.
+# Only run from the extracted release folder; does not modify booking_ai_new.
 set -euo pipefail
-cd "$(dirname "$0")"
-repo="${1:-booking-data-analyst-demo}"
+
+PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_NAME="${1:-booking-data-analyst-demo}"
+
+if [[ ! "$REPO_NAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "Repository name is invalid: $REPO_NAME" >&2
+  exit 2
+fi
 if ! command -v gh >/dev/null 2>&1; then
-  echo 'Chưa có GitHub CLI. Hãy chạy: brew install gh'
+  echo "Install GitHub CLI first: brew install gh" >&2
   exit 1
 fi
-if ! command -v git >/dev/null 2>&1; then
-  echo 'Chưa có git.'
+if ! command -v rsync >/dev/null 2>&1; then
+  echo "Missing rsync" >&2
   exit 1
 fi
 if ! gh auth status >/dev/null 2>&1; then
-  echo 'Chưa đăng nhập GitHub CLI. Hãy chạy: gh auth login'
+  echo "Please log in: gh auth login" >&2
   exit 1
 fi
-if [[ -d .git ]]; then
-  echo 'Thư mục này đã có .git; không tự tạo/push để tránh ghi nhầm lên repo hiện có.'
-  exit 1
+
+USERNAME="$(gh api user --jq '.login')"
+TARGET="${USERNAME}/${REPO_NAME}"
+if ! gh repo view "$TARGET" >/dev/null 2>&1; then
+  echo "Creating PUBLIC repository: $TARGET"
+  gh repo create "$TARGET" --public --description "Original logistics booking Streamlit app - synthetic public showcase"
 fi
-if [[ ! "$repo" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
-  echo 'Tên repository không hợp lệ.'
-  exit 1
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+gh repo clone "$TARGET" "$WORKDIR/repo"
+cd "$WORKDIR/repo"
+git checkout -B main
+
+# Replace previous QR demo with the original operational app.
+# The release is curated: no user DB, customer documents, credentials or XLSX.
+rsync -a --delete \
+  --exclude='.git/' \
+  --exclude='__pycache__/' \
+  --exclude='*.pyc' \
+  "$PROJECT_DIR/" "$WORKDIR/repo/"
+
+git add -A
+echo
+echo "Files to be published / changed in $TARGET:"
+git diff --cached --stat
+if git diff --cached --quiet; then
+  echo "No changes; repository is already up to date."
+  gh repo view "$TARGET" --web
+  exit 0
 fi
-git init -b main
-git add .
-git commit -m 'Publish Booking Data Analyst demo (synthetic data only)'
-echo "Đang tạo repository PUBLIC: $repo"
-gh repo create "$repo" --public --source=. --remote=origin --push
-printf '\nĐÃ PUSH. Repo: '
-gh repo view --json url --jq .url
-printf 'Triển khai app: https://share.streamlit.io/ (main file: streamlit_app.py)\n'
+printf 'Replace repository files listed above and push to main? [y/N] '
+read -r CONFIRM
+if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+  echo "Cancelled; no commit or push was made."
+  exit 0
+fi
+
+git -c user.name="${USERNAME}" -c user.email="${USERNAME}@users.noreply.github.com" \
+  commit -m "Deploy original logistics app with isolated public demo and analytics"
+git push -u origin main
+echo
+echo "Done: https://github.com/$TARGET"
+echo "Streamlit Cloud entry point: app.py (branch: main)"
